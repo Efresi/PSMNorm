@@ -16,7 +16,6 @@ appendTabellona(targetPeptide_name, targetProtein_name, Tabellona_PATH, id_pz_es
   \item{Tabellona_PATH}{ a file path for Tabellona.xlsx}
   \item{id_pz_escl}{ vector of patient ID to be excluded from Tabellona (Default=NA inserts every patient)}
 }
-}
 \details{
 %%  ~~ If necessary, more details than the description above ~~
 }
@@ -42,6 +41,7 @@ Eleonora Fresi
 targetPeptide <- "1234 - AB-11-111 TargetPeptideSpectrumMatch.txt"
 targetProtein <- "1234 - AB-11-111 TargetProtein.txt"
 Tabellona_PATH <- "C:/Users/utente/prova/Tabellona.xlsx"
-appendTabellona(targetPeptide, targetProtein, Tabellona_PATH)
+appendTabellona(targetPeptide, targetProtein, Tabellona_PATH, c(123, 234, 345))
 # the function updates "Tabellona.xlsx" file
+# patients 123, 234 and 345 will be excluded
 }

@@ -2,17 +2,14 @@ PSMnormalization <- function(targetPeptide_name, targetProtein_name, out_folder)
 
   library(stringi)
   library(openxlsx)
+  library(readr)
 
   #Carico file TargetPeptideSpectrumMatch
-  targetPeptide <- read.csv(targetPeptide_name , sep = "" )
+  targetPeptide <- read_delim(targetPeptide_name , delim = "\t", show_col_types = FALSE, progress = FALSE)
 
   #Carico TargetProtein
-  targetProtein <- read.csv(targetProtein_name, sep = "" )
+  targetProtein <- read_delim(targetProtein_name, delim = "\t", show_col_types = FALSE, progress = FALSE)
 
-  colnames(targetProtein) <- c("Checked", "Master", "Accession", "Description", "Contaminant", "D",
-                               "Coverage", "# PSMs", "Score Sequest HT", "# Peptides", "# Unique Peptides",
-                               "# Protein Groups", "# AAs", "MW [kDa]", "calc. pI", "Modifications",
-                               "# Peptides Sequest HT")
 
   #Calcolo PSMtot
   PSMtot <- nrow(targetPeptide)
@@ -24,6 +21,7 @@ PSMnormalization <- function(targetPeptide_name, targetProtein_name, out_folder)
                "PSM/AA"	, "/PSM tot", "PSM tot", "MS/MS",	"Somma")
 
   #Creo il file per lo sheet Master
+  if(!('D' %in% colnames(targetProtein))){ columns <- columns[-which(columns == 'D')]}
   Master <- data.frame(matrix(nrow = nrow(targetProtein), ncol = length(columns)))
   colnames(Master)<- columns
   Master[, 1:which(columns=='Score Sequest HT')] <- targetProtein[, columns[1:which(columns=='Score Sequest HT')]]
@@ -40,7 +38,7 @@ PSMnormalization <- function(targetPeptide_name, targetProtein_name, out_folder)
 
   if(length(indices_lambda) != 0){ #se presente la lambda-like
 
-    IDXpeptides <- unlist(lapply("VTVLGQPK", function(x) grep(x, targetPeptide$Annotated.Sequence))) #cerco la sequenza
+    IDXpeptides <- unlist(lapply("VTVLGQPK", function(x) grep(x, targetPeptide$'Annotated Sequence'))) #cerco la sequenza
     check_lamb_like <- ifelse(length(IDXpeptides) != 0, 1, 0) #se presente la sequenza metti check = 1 per colorare la riga di rosso
 
     # Correggo psm della lamda like sottraendo il numero di volte che trovo la sequenza VTVLGQPK
@@ -52,11 +50,11 @@ PSMnormalization <- function(targetPeptide_name, targetProtein_name, out_folder)
 
   #-----------------------------------------------------------------------------
   #Calcolo PSM/AA
-  Master[, "PSM/AA"] <- round(((Master$`# PSMs`)/(Master$`# AAs`)*100), 3)
+  Master[, "PSM/AA"] <- ((Master$`# PSMs`)/(Master$`# AAs`)*100)
 
   #Calcolo PSM/AA/PSM tot
   PSM_norm <- (Master$`PSM/AA`)/(PSMtot)*100
-  Master[, "/PSM tot"] <- round(PSM_norm, 3)
+  Master[, "/PSM tot"] <- PSM_norm
 
   #Metto in ordine per psm normalizzato
   Master <- Master[order(- Master$`/PSM tot`), ]
@@ -82,7 +80,7 @@ PSMnormalization <- function(targetPeptide_name, targetProtein_name, out_folder)
                "Transthyretin", "Vitronectin", "heavy chain_V")
 
   idx <- unlist(lapply(amyPROT, function(x) grep(x, Master$Description)))
-  Amyloid <- Master[idx, -c(which(colnames(Master)=='D'), which(colnames(Master)=='Coverage'))]
+  Amyloid <- Master[idx, -c(which(colnames(Master)=='D'), which(colnames(Master) == 'Coverage'))]
   Amyloid <- Amyloid[order(- Amyloid$`/PSM tot`), ]
   Amyloid[1, "PSM tot"] <- PSMtot
   Amyloid[1, "Somma"] <- sum(Master[AmySigIndex, "/PSM tot"])
@@ -228,7 +226,7 @@ PSMnormalization <- function(targetPeptide_name, targetProtein_name, out_folder)
   check_heavy_chainV <- 0
 
   if(length(indices) != 0){
-    IDXpeptides <- unlist(lapply("GLEWVSAISGSGGGTYYADSVK", function(x) grep(x, targetPeptide$Annotated.Sequence)))
+    IDXpeptides <- unlist(lapply("GLEWVSAISGSGGGTYYADSVK", function(x) grep(x, targetPeptide$'Annotated Sequence')))
     check_heavy_chainV <- ifelse(length(IDXpeptides) != 0, 1, 0)
   }
 
@@ -252,9 +250,9 @@ PSMnormalization <- function(targetPeptide_name, targetProtein_name, out_folder)
   check_apo_A_IV <- 0
 
   if(length(indices) != 0){
-    IDXpeptides_1 <- unlist(lapply("ARAEVSADQVATVMWDYFSQLSNNAK", function(x) grep(x, targetPeptide$Annotated.Sequence)))
-    IDXpeptides_2 <- unlist(lapply("RAEVSADQVATVMWDYFSQLSNNAK", function(x) grep(x, targetPeptide$Annotated.Sequence)))
-    IDXpeptides_3 <- unlist(lapply("AEVSADQVATVMWDYFSQLSNNAK", function(x) grep(x, targetPeptide$Annotated.Sequence)))
+    IDXpeptides_1 <- unlist(lapply("ARAEVSADQVATVMWDYFSQLSNNAK", function(x) grep(x, targetPeptide$'Annotated Sequence')))
+    IDXpeptides_2 <- unlist(lapply("RAEVSADQVATVMWDYFSQLSNNAK", function(x) grep(x, targetPeptide$'Annotated Sequence')))
+    IDXpeptides_3 <- unlist(lapply("AEVSADQVATVMWDYFSQLSNNAK", function(x) grep(x, targetPeptide$'Annotated Sequence')))
     cond = length(IDXpeptides_1) != 0 | length(IDXpeptides_2) != 0 | length(IDXpeptides_3) != 0
     check_apo_A_IV <- ifelse(cond, 1, 0)
   }

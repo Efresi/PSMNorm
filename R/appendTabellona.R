@@ -1,17 +1,14 @@
 appendTabellona <- function(targetPeptide_name, targetProtein_name, Tabellona_PATH, id_pz_escl = NA) {
   library(stringi)
   library(openxlsx)
+  library(readr)
 
   #Carico file TargetPeptideSpectrumMatch
-  targetPeptide <- read.csv(targetPeptide_name , sep = "" )
+  targetPeptide <- read_delim(targetPeptide_name , delim = "\t", show_col_types = FALSE, progress = FALSE)
 
   #Carico TargetProtein
-  targetProtein <- read.csv(targetProtein_name, sep = "" )
+  targetProtein <- read_delim(targetProtein_name, delim = "\t", show_col_types = FALSE, progress = FALSE)
 
-  colnames(targetProtein) <- c("Checked", "Master", "Accession", "Description", "Contaminant", "D",
-                               "Coverage", "# PSMs", "Score Sequest HT", "# Peptides", "# Unique Peptides",
-                               "# Protein Groups", "# AAs", "MW [kDa]", "calc. pI", "Modifications",
-                               "# Peptides Sequest HT")
 
   #prendo numero paziente, codice e file dal nome file
   #prendo PSM tot dal numero righe di TargetPeptide
@@ -20,8 +17,15 @@ appendTabellona <- function(targetPeptide_name, targetProtein_name, Tabellona_PA
 
   n_paziente <- as.numeric(stri_replace_all_fixed(tmp[1], " ", "")) #attenzione
   codice_pz  <- stri_replace_all_fixed(tmp[3], " ", "")#attenzione
+
+  #Alcuni file hanno il trattino basso, altri il trattino alto, altri hanno lo spazio tra la data
+  #e il nome del file. Per prendere il nome del file corretto partiamo da dx verso sx '<-' prendendo
+  #la terzultima(-2) e penultima(-1) sottostringa
+
   file_pz    <- stri_split_fixed(tmp[length(tmp)], "_")[[1]]
-  file_pz    <- stri_c(file_pz[2], "_", file_pz[3])
+  last_item  <- length(file_pz)
+  file_pz    <- stri_c(file_pz[(last_item-2)], "_", file_pz[(last_item-1)])
+
   PSMtot <- nrow(targetPeptide)
 
   #prendo coverage, #psm e score sequest ht dal file TargetProtein
@@ -43,18 +47,18 @@ appendTabellona <- function(targetPeptide_name, targetProtein_name, Tabellona_PA
   if(length(idx_ll) != 0){
 
     #Cerco per la sequenza VTVLGQPK
-    IDXpeptides <- unlist(lapply("VTVLGQPK", function(x) grep(x, targetPeptide$Annotated.Sequence))) #cerco la sequenza
+    IDXpeptides <- unlist(lapply("VTVLGQPK", function(x) grep(x, targetPeptide$'Annotated Sequence'))) #cerco la sequenza
 
     targetProtein$`# PSMs`[idx_ll] <- targetProtein$`# PSMs`[idx_ll] - length(IDXpeptides)
     targetProtein$`# AAs`[idx_ll] <- 106
   }
 
   #Calcolo PSM/AA
-  PSM_AA <- round(((targetProtein$`# PSMs`[idx])/(targetProtein$`# AAs`[idx])*100), 3)
+  PSM_AA <- ((targetProtein$`# PSMs`[idx])/(targetProtein$`# AAs`[idx])*100)
 
   #Calcolo PSM/AA/PSM tot
   PSM_norm <- (PSM_AA)/(PSMtot)*100
-  PSM_normfinal <- round(PSM_norm, 3)
+  PSM_normfinal <- PSM_norm
 
   # Creazione del dataframe dato_new_pz
   dato_new_pz <- targetProtein[idx, columns]
@@ -104,7 +108,7 @@ appendTabellona <- function(targetPeptide_name, targetProtein_name, Tabellona_PA
 
         } else if (length(idx_new_dato) == 1){ #se trova la proteina i-esima
 
-          Tabellona[nrow(Tabellona), idx_colonna] <- round(dato_new_pz[idx_new_dato, c(-1)], 3)
+          Tabellona[nrow(Tabellona), idx_colonna] <- dato_new_pz[idx_new_dato, c(-1)]
 
         } else { #se trova più occorrenze della stessa proteina (es. + frammenti)
 
@@ -114,7 +118,7 @@ appendTabellona <- function(targetPeptide_name, targetProtein_name, Tabellona_PA
           #prendo la riga relativa alla proteina con #PSMs maggiore
           tmp <- dato_new_pz[idx_new_dato[max_psm_row], c(-1)]
 
-          Tabellona[nrow(Tabellona), idx_colonna] <- round(tmp, 3)
+          Tabellona[nrow(Tabellona), idx_colonna] <- tmp
 
         }
       }
@@ -144,7 +148,7 @@ appendTabellona <- function(targetPeptide_name, targetProtein_name, Tabellona_PA
         # Select only the index with the maximum value of #PSMs
         ind_lambda_max <- idx_new_dato[max_index]
 
-        Tabellona[nrow(Tabellona), idx_colonna] <- round(dato_new_pz[ind_lambda_max, c(-1)], 3)
+        Tabellona[nrow(Tabellona), idx_colonna] <- dato_new_pz[ind_lambda_max, c(-1)]
 
       } else{ #se non trova nessuna delle lambda mette tutto a zero
         Tabellona[nrow(Tabellona), idx_colonna] <- vector(mode = "numeric", length = length(idx_colonna))
@@ -209,7 +213,7 @@ appendTabellona <- function(targetPeptide_name, targetProtein_name, Tabellona_PA
       saveWorkbook(file, Tabellona_PATH, overwrite = TRUE)
 
     } else {
-      cat('\n\n !!! ATTENZIONE: PAZIENTE GIÀ ESISTENTE IN TABELLONA !!!')
+      cat('\n\n !!! ATTENZIONE: PAZIENTE', n_paziente, 'GIÀ ESISTENTE IN TABELLONA !!!')
     }
   } else { #è stata passata una lista di pazienti da escludere dalla Tabellona in cui n_paziente è presente
     cat('\n\n !!! ATTENZIONE: IL PAZIENTE NON PUÒ ESSERE INSERITO IN TABELLONA !!!')
