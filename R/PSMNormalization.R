@@ -21,7 +21,20 @@ PSMnormalization <- function(targetPeptide_name, targetProtein_name, out_folder)
                "PSM/AA"	, "/PSM tot", "PSM tot", "MS/MS",	"Somma")
 
   #Creo il file per lo sheet Master
-  if(!('D' %in% colnames(targetProtein))){ columns <- columns[-which(columns == 'D')]}
+
+  # if(!('D' %in% colnames(targetProtein))){ columns <- columns[-which(columns == 'D')]}
+
+  #Check delle colonne mancanti: se al file targetProtein manca qualche colonna, ne creo una fittizia di tutti missing
+  for (i in 1:length(columns[1:which(columns=='Score Sequest HT')])){
+    if(!(columns[i] %in% colnames(targetProtein))){
+
+      tmp <- rep('ND', nrow(targetProtein))
+      targetProtein <- cbind(targetProtein, tmp)
+      colnames(targetProtein)[ncol(targetProtein)] <- columns[i]
+
+    }
+  }
+
   Master <- data.frame(matrix(nrow = nrow(targetProtein), ncol = length(columns)))
   colnames(Master)<- columns
   Master[, 1:which(columns=='Score Sequest HT')] <- targetProtein[, columns[1:which(columns=='Score Sequest HT')]]
@@ -88,8 +101,7 @@ PSMnormalization <- function(targetPeptide_name, targetProtein_name, out_folder)
   ##################################################################################
   #----------------------Gestisco file xlsx in uscita--------------------------#
 
-  tmp <- stri_split_boundaries(targetPeptide_name)[[1]][3] #prendo la terza sottostringa
-  tmp <- stri_replace_all_fixed(tmp, " ", "")
+  tmp <- stri_split_fixed(targetPeptide_name, ' ')[[1]][3] #prendo la terza sottostringa
   nomeFile <- stri_c(out_folder, tmp, ".xlsx")
   list_sheets <- list("Master" = Master, "Amyloid" = Amyloid)
   write.xlsx(list_sheets, nomeFile)
@@ -257,7 +269,7 @@ PSMnormalization <- function(targetPeptide_name, targetProtein_name, out_folder)
     check_apo_A_IV <- ifelse(cond, 1, 0)
   }
 
-  # Se presente check==1colora il testo della riga lambda like di rosso
+  # Se presente check==1 colora il testo della riga lambda like di rosso
 
   if (check_apo_A_IV == 1){
 

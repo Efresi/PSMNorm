@@ -4,9 +4,9 @@ Title: PSM Normalization over single patient Mass Spectrometer output
 Description: A tool that normalizes PSM counts and calculates the sum of PSMs for 
              selected amyloidogenic proteins; It also provides the comprehensive 
              Dataset with the selected protein information for all patients
-Version: 1.0.3
+Version: 1.0.4
 Author: Eleonora Fresi
 Maintainer: Eleonora Fresi <e.fresi@smatteo.pv.it>
 Encoding: UTF-8
-Date/Publication: 2024-04-24
+Date/Publication: 2024-04-26
 Suggests: data.table, stringi, openxlsx

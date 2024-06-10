@@ -13,10 +13,10 @@ appendTabellona <- function(targetPeptide_name, targetProtein_name, Tabellona_PA
   #prendo numero paziente, codice e file dal nome file
   #prendo PSM tot dal numero righe di TargetPeptide
 
-  tmp <- stri_split_boundaries(targetPeptide_name)[[1]] #attenzione
+  tmp <- stri_split_fixed(targetPeptide_name, ' ')[[1]] #attenzione
 
-  n_paziente <- as.numeric(stri_replace_all_fixed(tmp[1], " ", "")) #attenzione
-  codice_pz  <- stri_replace_all_fixed(tmp[3], " ", "")#attenzione
+  n_paziente <- as.numeric(tmp[1]) #attenzione
+  codice_pz  <- tmp[3] #attenzione
 
   #Alcuni file hanno il trattino basso, altri il trattino alto, altri hanno lo spazio tra la data
   #e il nome del file. Per prendere il nome del file corretto partiamo da dx verso sx '<-' prendendo
@@ -41,6 +41,18 @@ appendTabellona <- function(targetPeptide_name, targetProtein_name, Tabellona_PA
 
   idx <- unlist(lapply(amyPROT, function(x) grep(x, targetProtein$Description)))
 
+  #Check delle colonne mancanti: se al file targetProtein manca qualche colonna, ne creo una fittizia di tutti missing
+
+  for (i in 1:length(columns[1:which(columns=='Score Sequest HT')])){
+    if(!(columns[i] %in% colnames(targetProtein))){
+
+      tmp <- rep('ND', nrow(targetProtein))
+      targetProtein <- cbind(targetProtein, tmp)
+      colnames(targetProtein)[ncol(targetProtein)] <- columns[i]
+
+    }
+  }
+
   #Correggo #AAs e #PSMs per Immunoglobulin lambda-like, se presente
 
   idx_ll <- unlist(lapply("Immunoglobulin lambda-like", function(x) grep(x, targetProtein$Description)))
@@ -51,6 +63,7 @@ appendTabellona <- function(targetPeptide_name, targetProtein_name, Tabellona_PA
 
     targetProtein$`# PSMs`[idx_ll] <- targetProtein$`# PSMs`[idx_ll] - length(IDXpeptides)
     targetProtein$`# AAs`[idx_ll] <- 106
+
   }
 
   #Calcolo PSM/AA
@@ -60,7 +73,8 @@ appendTabellona <- function(targetPeptide_name, targetProtein_name, Tabellona_PA
   PSM_norm <- (PSM_AA)/(PSMtot)*100
   PSM_normfinal <- PSM_norm
 
-  # Creazione del dataframe dato_new_pz
+  #Creazione del dataframe dato_new_pz
+
   dato_new_pz <- targetProtein[idx, columns]
   dato_new_pz <- cbind(dato_new_pz, PSM_AA, PSM_normfinal)
 
@@ -122,9 +136,9 @@ appendTabellona <- function(targetPeptide_name, targetProtein_name, Tabellona_PA
 
         }
       }
-      Tabellona[nrow(Tabellona), 'N.'] <- n_paziente
-      Tabellona[nrow(Tabellona), 'Codice'] <- codice_pz
-      Tabellona[nrow(Tabellona), 'File'] <- file_pz
+      Tabellona[nrow(Tabellona), 'N.']      <- n_paziente
+      Tabellona[nrow(Tabellona), 'Codice']  <- codice_pz
+      Tabellona[nrow(Tabellona), 'File']    <- file_pz
       Tabellona[nrow(Tabellona), 'PSM tot'] <- PSMtot
 
       ##### IMMUNOGLOBULINE Lambda
