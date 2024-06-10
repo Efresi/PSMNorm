@@ -27,20 +27,30 @@ PSMnormalization <- function(targetPeptide_name, targetProtein_name) {
   colnames(Master)<- columns
   Master[, 1:which(columns=='Score Sequest HT')] <- targetProtein[, columns[1:which(columns=='Score Sequest HT')]]
 
-  #Gestisco le Immunoglobulin lambda-like polypeptide: se presenti,
-  #vado a vedere quante volte compare la sequenza VTVLGQPK nel file TargetPeptide
-  #e sottraggo quel valore al #PSMs della lambda-like
+  #-----------------------------------------------------------------------------
+  # Immunoglobulin lambda-like polypeptide
+  # Gestisco le Immunoglobulin lambda-like polypeptide: se presenti,
+  # vado a vedere quante volte compare la sequenza VTVLGQPK nel file TargetPeptide
+  # e sottraggo quel valore al #PSMs della lambda-like
 
   prot <- c("Immunoglobulin lambda-like")
   indices_lambda <- unlist(lapply(prot, function(x) grep(x, Master$Description)))
   check_lamb_like <- 0
-  if(length(indices_lambda) != 0){
-    IDXpeptides <- unlist(lapply("VTVLGQPK", function(x) grep(x, targetPeptide$Annotated.Sequence)))
-    check_lamb_like <- 1
-  }
-  Master[indices_lambda, '# PSMs'] <- Master[indices_lambda, '# PSMs'] - length(IDXpeptides)
-  Master[indices_lambda, '# AAs'] <- 106
 
+  if(length(indices_lambda) != 0){ #se presente la lambda-like
+
+    IDXpeptides <- unlist(lapply("VTVLGQPK", function(x) grep(x, targetPeptide$Annotated.Sequence))) #cerco la sequenza
+    if (length(IDXpeptides) != 0 ){ #se presente la sequenza metti check = 1 per colorare la riga di rosso
+      check_lamb_like <- 1
+    }
+    # Correggo psm della lamda like sottraendo il numero di volte che trovo la sequenza VTVLGQPK
+    # Correggo #AAs che deve esssere 106 nella lambda-like
+
+    Master[indices_lambda, '# PSMs'] <- Master[indices_lambda, '# PSMs'] - length(IDXpeptides)
+    Master[indices_lambda, '# AAs'] <- 106
+  }
+
+  #-----------------------------------------------------------------------------
   #Calcolo PSM/AA
   Master[, "PSM/AA"] <- round(((Master$`# PSMs`)/(Master$`# AAs`)*100), 3)
 
@@ -69,12 +79,13 @@ PSMnormalization <- function(targetPeptide_name, targetProtein_name) {
   #Seleziono proteine per foglio amyloid
   amyPROT <- c("Apolipoprotein A", "Apolipoprotein C", "Apolipoprotein E", "Beta-2-microglobulin",
                "Fibrinogen", "Gelsolin", "Immunoglobulin", "Lysozyme", "Serum albumin", "Serum amyloid",
-               "Transthyretin", "Vitronectin")
+               "Transthyretin", "Vitronectin", "heavy chain_V")
   idx <- unlist(lapply(amyPROT, function(x) grep(x, Master$Description)))
   Amyloid <- Master[idx, -c(which(colnames(Master)=='D'), which(colnames(Master)=='Coverage'))]
   Amyloid <- setorderv(Amyloid, cols = "/PSM tot", order = -1)
   Amyloid[1, "PSM tot"] <- PSMtot
   Amyloid[1, "Somma"] <- sum(Master[AmySigIndex, "/PSM tot"])
+
   ##################################################################################
   #----------------------Gestisco file xlsx in uscita--------------------------#
   library(openxlsx)
@@ -202,6 +213,57 @@ PSMnormalization <- function(targetPeptide_name, targetProtein_name) {
   fill_style <- createStyle(fgFill = "sandybrown")
   addStyle(file, sheet = sheet, rows = indices + 1, cols = 1:which(colnames(Amyloid) == '/PSM tot'), style = fill_style, stack = TRUE, gridExpand = TRUE)
 
+  #-----------------------------------------------------------------------------
+  #### heavy chain_V
+  #-----------------------------------------------------------------------------
+  # Quando è presente heavy chain_V, check se presente la sequenza GLEWVSAISGSGGGTYYADSVK
+  # nel file targetpeptide
+
+  prot <- c("heavy chain_V")
+  indices <- unlist(lapply(prot, function(x) grep(x, Amyloid$Description)))
+  check_heavy_chainV <- 0
+
+  if(length(indices) != 0){
+    IDXpeptides <- unlist(lapply("GLEWVSAISGSGGGTYYADSVK", function(x) grep(x, targetPeptide$Annotated.Sequence)))
+    check_heavy_chainV <- ifelse(length(IDXpeptides) != 0, 1, 0)
+  }
+
+  # Se presente la sequenza GLEWVSAISGSGGGTYYADSVK  colora il testo della riga di verde
+
+  if (check_heavy_chainV == 1){
+
+    fill_style <- createStyle(fgFill = "green2")
+    addStyle(file, sheet = sheet, rows = indices + 1, cols = 1:which(colnames(Amyloid) == '/PSM tot'), style = fill_style, stack = TRUE, gridExpand = TRUE)
+
+  }
+
+  #-----------------------------------------------------------------------------
+  #### Apolipoprotein A-IV
+  #-----------------------------------------------------------------------------
+  # Gestisco la Apolipoprotein A-IV, check se presente almeno una delle seguenti sequenze
+  # - ARAEVSADQVATVMWDYFSQLSNNAK
+  # - RAEVSADQVATVMWDYFSQLSNNAK
+  # - AEVSADQVATVMWDYFSQLSNNAK
+
+  check_apo_A_IV <- 0
+
+  if(length(indices) != 0){
+    IDXpeptides_1 <- unlist(lapply("ARAEVSADQVATVMWDYFSQLSNNAK", function(x) grep(x, targetPeptide$Annotated.Sequence)))
+    IDXpeptides_2 <- unlist(lapply("RAEVSADQVATVMWDYFSQLSNNAK", function(x) grep(x, targetPeptide$Annotated.Sequence)))
+    IDXpeptides_3 <- unlist(lapply("AEVSADQVATVMWDYFSQLSNNAK", function(x) grep(x, targetPeptide$Annotated.Sequence)))
+    cond = length(IDXpeptides_1) != 0 | length(IDXpeptides_2) != 0 | length(IDXpeptides_3) != 0
+    check_apo_A_IV <- ifelse(cond, 1, 0)
+  }
+
+  # Se presente check==1colora il testo della riga lambda like di rosso
+
+  if (check_apo_A_IV == 1){
+
+    idx <- unlist(lapply("Apolipoprotein A-IV", function(x) grep(x, Amyloid$Description)))
+    fill_style <- createStyle(fontColour = "red")
+    addStyle(file, sheet = sheet, rows = idx + 1, cols = 1:which(colnames(Amyloid) == '/PSM tot'), style = fill_style, stack = TRUE, gridExpand = TRUE)
+
+  }
 
   #-----------------------------------------------------------------------------
 
@@ -210,4 +272,5 @@ PSMnormalization <- function(targetPeptide_name, targetProtein_name) {
   saveWorkbook(file, nomeFile, overwrite = TRUE)
 
 }
+
 

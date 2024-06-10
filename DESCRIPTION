@@ -1,8 +1,13 @@
 Package: PSMnorm
 Type: Package
-Title: PSM Normalization over single patient Mass Spectrometer output
-Description: A tool that normalizes PSM counts and calculates the sum of PSMs for selected amyloidogenic proteins 
-Version: 0.1.1
+Title: PSM Normalization over single patient Mass Spectrometer output 
+Description: A tool that normalizes PSM counts and calculates the sum of PSMs for 
+             selected amyloidogenic proteins; It also provides the comprehensive 
+             Dataset with the selected protein information for all patients
+Version: 1.0.0
 Author: Eleonora Fresi
 Maintainer: Eleonora Fresi <e.fresi@smatteo.pv.it>
 Encoding: UTF-8
+Date/Publication: 2024-04-09
+Suggests: data.table, stringi, openxlsx
+
