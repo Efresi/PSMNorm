@@ -41,7 +41,7 @@ appendTabellona <- function(targetPeptide_name, targetProtein_name, Tabellona_na
 
   library(openxlsx)
 
-  Tabellona <- openxlsx::read.xlsx(Tabellona_name, sheet = 1, sep.names = " ")
+  Tabellona <- read.xlsx(Tabellona_name, sheet = 1, sep.names = " ")
 
   idx_prot <- c('Apolipoprotein A-I ' , 'Apolipoprotein A-II ' , 'Apolipoprotein A-IV ' ,
                 'Apolipoprotein C-II ' , 'Apolipoprotein C-III ' , 'Apolipoprotein E' ,
@@ -51,10 +51,12 @@ appendTabellona <- function(targetPeptide_name, targetProtein_name, Tabellona_na
                 'Immunoglobulin kappa constant' ,  'Immunoglobulin lambda constant' ,
                 'Lysozyme' , 'Serum albumin' ,'Serum amyloid A' ,
                 'Serum amyloid P-component' , 'Transthyretin' , 'Vitronectin')
+  colonne <- colnames(Tabellona)
 
   if(!(n_paziente %in% Tabellona$N.)){ #Se il paziente non è già registrato in Tabellona
 
     Tabellona <- rbind(Tabellona, vector(mode = 'numeric', length = ncol(Tabellona)))
+    colnames(Tabellona) <- colonne
 
     for(i in 1:length(idx_prot)){
 
@@ -72,13 +74,16 @@ appendTabellona <- function(targetPeptide_name, targetProtein_name, Tabellona_na
 
       } else if (length(idx_new_dato) == 1){ #se trova la proteina i-esima
 
-        Tabellona[nrow(Tabellona), idx_colonna] <- dato_new_pz[idx_new_dato, columns[-1]]
+        Tabellona[nrow(Tabellona), idx_colonna] <- round(dato_new_pz[idx_new_dato, columns[-1]], 3)
 
       } else { #se trova più occorrenze della stessa proteina (es. + frammenti)
-        #prendo il valore con #PSMs maggiore
+        #trovo la proteina con #PSMs maggiore
         max_psm_row <- which.max(dato_new_pz[idx_new_dato, "# PSMs"])
 
-        Tabellona[nrow(Tabellona), idx_colonna] <- dato_new_pz[idx_new_dato[max_psm_row], columns[-1]]
+        #prendo la riga relativa alla proteina con #PSMs maggiore
+        tmp <- dato_new_pz[idx_new_dato[max_psm_row], columns[-1]]
+
+        Tabellona[nrow(Tabellona), idx_colonna] <- round(tmp, 3)
 
       }
     }
@@ -89,12 +94,44 @@ appendTabellona <- function(targetPeptide_name, targetProtein_name, Tabellona_na
 
     #Metto in ordine per N. paziente
     Tabellona <- Tabellona[order(Tabellona$'N.'), ]
+
     #Sovrascrivo il file
+    write.xlsx(Tabellona, Tabellona_name)
 
-    #creo tutta la formattazione del workbook
+    #Creo tutta la formattazione del workbook
+    file <- loadWorkbook(Tabellona_name)
 
+    #Metto i bordi alle celle
+    fill_style <- createStyle(fontColour = "red", textDecoration = 'bold', border = 'bottom')
+    addStyle(file, sheet = 1, rows = 1, cols = 1:ncol(Tabellona), style = fill_style, gridExpand = TRUE)
 
-    openxlsx::write.xlsx(Tabellona, Tabellona_name)
+    index <- which(colnames(Tabellona) == 'Peptidi')
+    fill_style <- createStyle(fgFill = "gray90")
+    addStyle(file, sheet = 1, rows = 1:(nrow(Tabellona)+1), cols = 1:index, style = fill_style, gridExpand = TRUE, stack = TRUE)
+    fill_style <- createStyle(border = 'right')
+    addStyle(file, sheet = 1, rows = 1:(nrow(Tabellona)+1), cols = index, style = fill_style, gridExpand = TRUE, stack = TRUE)
+
+    for (i in 1:length(idx_prot)){
+      if(i%%2 != 0){
+        index <- unlist(lapply(idx_prot[i], function(x) grep(x, colnames(Tabellona))))
+        fill_style <- createStyle(border = 'right')
+        addStyle(file, sheet = 1, rows = 1:(nrow(Tabellona)+1), cols = index[length(index)], style = fill_style, gridExpand = TRUE, stack = TRUE)
+        fill_style <- createStyle(fgFill = "peachpuff")
+        addStyle(file, sheet = 1, rows = 1:(nrow(Tabellona)+1), cols = index[1]:index[length(index)], style = fill_style, gridExpand = TRUE, stack = TRUE)
+
+      } else {
+        index <- unlist(lapply(idx_prot[i], function(x) grep(x, colnames(Tabellona))))
+        fill_style <- createStyle(border = 'right')
+        addStyle(file, sheet = 1, rows = 1:(nrow(Tabellona)+1), cols = index[length(index)], style = fill_style, gridExpand = TRUE, stack = TRUE)
+        fill_style <- createStyle(fgFill = "thistle2")
+        addStyle(file, sheet = 1, rows = 1:(nrow(Tabellona)+1), cols = index[1]:index[length(index)], style = fill_style, gridExpand = TRUE, stack = TRUE)
+
+      }
+
+    }
+    setColWidths(file, 1, widths = 'auto', cols = 1:100)
+    saveWorkbook(file, Tabellona_name, overwrite = TRUE)
+
   } else {
     cat('\n\n !!! ATTENZIONE: PAZIENTE GIÀ ESISTENTE IN TABELLONA !!!')
   }

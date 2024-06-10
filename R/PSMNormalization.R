@@ -73,37 +73,34 @@ PSMnormalization <- function(targetPeptide_name, targetProtein_name) {
   idx <- unlist(lapply(amyPROT, function(x) grep(x, Master$Description)))
   Amyloid <- Master[idx, -c(which(colnames(Master)=='D'), which(colnames(Master)=='Coverage'))]
   Amyloid <- setorderv(Amyloid, cols = "/PSM tot", order = -1)
-  Master <- Master[, -which(colnames(Master)=="Somma")]
-
+  Amyloid[1, "PSM tot"] <- PSMtot
+  Amyloid[1, "Somma"] <- sum(Master[AmySigIndex, "/PSM tot"])
   ##################################################################################
   #----------------------Gestisco file xlsx in uscita--------------------------#
-  library(xlsx)
+  library(openxlsx)
 
   tmp <- stri_split_boundaries(targetPeptide_name)[[1]][3] #prendo la terza sottostringa
   tmp <- stri_replace_all_fixed(tmp, " ", "")
   nomeFile <- stri_c(tmp, ".xlsx")
-  write.xlsx(Master, nomeFile, sheetName = "Master", showNA = FALSE, row.names = FALSE)
-  write.xlsx(Amyloid, nomeFile, sheetName = "Amyloid", showNA = FALSE, row.names = FALSE, append = TRUE)
+  list_sheets <- list("Master" = Master, "Amyloid" = Amyloid)
+  write.xlsx(list_sheets, nomeFile)
 
   ####Crea la formattazione in automatico per lo sheet  Amyloid ####
   file <- loadWorkbook(nomeFile)
 
-  #Seleziono il foglio del file excel (Amyloid, sheet numero 2)
-  AllList <- getSheets(file)
-  sheet <- AllList[[2]]
-  #-----------------------------------------------------------------------------
+  # Select the Amyloid sheet
+  sheet <- "Amyloid"
+
+  #Metto l'intestazione di colonna in bold
+  fill_style <- createStyle(textDecoration = 'bold', border = 'bottom')
+  addStyle(file, sheet = 1, rows = 1, cols = 1:ncol(Master), style = fill_style, gridExpand = TRUE)
+  addStyle(file, sheet = 2, rows = 1, cols = 1:ncol(Amyloid), style = fill_style, gridExpand = TRUE)
+
   # Metto il testo della colonna #PSMs in rosso
-
   index <- which(colnames(Amyloid) == '# PSMs')
+  fill_style_PSM <- createStyle(fontColour = "red")
+  addStyle(file, sheet = sheet, rows = 1:nrow(Amyloid), cols = index, style = fill_style_PSM, stack = TRUE)
 
-  cells <- getCells(getRows(sheet), colIndex = index)
-
-  fill_style_PSM <- CellStyle(file) + Font(file, color = 'red')
-
-  #Applying color to the column
-  for (i in names(cells)) {
-    setCellStyle(cells[[i]], fill_style_PSM)
-  }
   #-----------------------------------------------------------------------------
   ####Crea la formattazione in automatico per le proteine dell'Amyloid signature nel foglio Amyloid####
 
@@ -113,31 +110,9 @@ PSMnormalization <- function(targetPeptide_name, targetProtein_name) {
               "Serum amyloid P")
 
   AmySigIndex <- unlist(lapply(AmySig, function(x) grep(x, Amyloid$Description)))
-  row <- getRows(sheet, AmySigIndex+1)
-  cells <- getCells(row, 1:which(colnames(Amyloid)=='/PSM tot'))
+  fill_style <- createStyle(fgFill = "yellow")
+  addStyle(file, sheet = sheet, rows = AmySigIndex + 1, cols = 1:which(colnames(Amyloid) == '/PSM tot'), style = fill_style, stack = TRUE, gridExpand = TRUE)
 
-  #Specifico il colore delle righe
-  fill_style <- CellStyle(file) +
-
-    Fill(backgroundColor = "yellow",
-
-         foregroundColor = "yellow",
-
-         pattern         = "SOLID_FOREGROUND")
-
-  #Applico il colore alle righe
-  for (i in names(cells)) {
-    setCellStyle(cells[[i]], fill_style)
-  }
-  #-----------------------------------------------------------------------------
-  #Tengo il font della colonna #PSMs rosso
-  cells <- getCells(row, index)
-  fill_new <- fill_style + Font(file, color = 'red')
-  fill_new$font <- Font(file, color = 'red')
-
-  for (i in names(cells)) {
-    setCellStyle(cells[[i]], fill_new)
-  }
   #-----------------------------------------------------------------------------
   ####------Crea la formattazione in automatico per le altre proteine------####
 
@@ -163,31 +138,10 @@ PSMnormalization <- function(targetPeptide_name, targetProtein_name) {
 
   indices <- c(indices_kappa, indices_lambda_max)
 
-  row <- getRows(sheet, indices+1)
-  cells <- getCells(row, 1:which(colnames(Amyloid)=='/PSM tot'))
+  fill_style <- createStyle(fgFill = "lightblue")
+  addStyle(file, sheet = sheet, rows = indices + 1, cols = 1:which(colnames(Amyloid) == '/PSM tot'), style = fill_style, stack = TRUE, gridExpand = TRUE)
 
-  #Specifico il colore delle righe
-  fill_style <- CellStyle(file) +
 
-    Fill(backgroundColor = "lightblue",
-
-         foregroundColor = "lightblue",
-
-         pattern         = "SOLID_FOREGROUND")
-
-  #Applying color to the row
-  for (i in names(cells)) {
-    setCellStyle(cells[[i]], fill_style)
-  }
-  #-----------------------------------------------------------------------------
-  #Tengo il font della colonna #PSMs rosso
-  cells <- getCells(row, index)
-  fill_new <- fill_style + Font(file, color = 'red')
-  fill_new$font <- Font(file, color = 'red')
-
-  for (i in names(cells)) {
-    setCellStyle(cells[[i]], fill_new)
-  }
   #-----------------------------------------------------------------------------
 
   # Se presente la sequenza VTVLGQPK  colora il testo della riga lambda like di rosso
@@ -195,33 +149,15 @@ PSMnormalization <- function(targetPeptide_name, targetProtein_name) {
   if (check_lamb_like == 1){
 
     idx_l_like <- unlist(lapply("Immunoglobulin lambda-like", function(x) grep(x, Amyloid$Description)))
-    row <- getRows(sheet, idx_l_like+1)
-    cells <- getCells(row, 1:which(colnames(Amyloid)=='/PSM tot'))
+    fill_style <- createStyle(fontColour = "red")
+    addStyle(file, sheet = sheet, rows = idx_l_like + 1, cols = 1:which(colnames(Amyloid) == '/PSM tot'), style = fill_style, stack = TRUE, gridExpand = TRUE)
 
-    if (idx_l_like == indices_lambda_max){
-      #se lambda-like è la proteina con # PSMs maggiore
-
-      fill_style <- CellStyle(file) +
-        Fill(backgroundColor = "lightblue",
-             foregroundColor = "lightblue",
-             pattern         = "SOLID_FOREGROUND") +
-        Font(file, color = 'red')
-
-    } else {
-      fill_style <- CellStyle(file) +
-        Font(file, color = 'red')
-    }
-
-    #Applying color to the rows
-    for (i in names(cells)) {
-      setCellStyle(cells[[i]], fill_style)
-    }
   }
   #### TTR e SAA
   #-----------------------------------------------------------------------------
   #Transthyretin OS=Homo sapiens OX=9606 GN=TTR PE=1 SV=1
   #Serum Amyloid A (1,2,4) protein
-  #delle SAA coloro solo la riga della prot con #PSMs max
+  #delle SAA evidenzio solo la riga della prot con #PSMs max
   #-----------------------------------------------------------------------------
   prot_TTR <- c("Transthyretin")
   prot_SAA <- c("Serum amyloid A")
@@ -236,33 +172,12 @@ PSMnormalization <- function(targetPeptide_name, targetProtein_name) {
   # Select only the index with the maximum value of Amyloid$PSMs
   indices_SAA_max <- indices_SAA[max_index]
 
-
   indices <- c(indices_TTR, indices_SAA_max)
 
-  row <- getRows(sheet, indices+1)
-  cells <- getCells(row, 1:which(colnames(Amyloid)=='/PSM tot'))
-  #Specifico il colore delle righe
-  fill_style <- CellStyle(file) +
+  fill_style <- createStyle(fgFill = "pink")
+  addStyle(file, sheet = sheet, rows = indices + 1, cols = 1:which(colnames(Amyloid) == '/PSM tot'), style = fill_style, stack = TRUE, gridExpand = TRUE)
 
-    Fill(backgroundColor = "pink3",
 
-         foregroundColor = "pink3",
-
-         pattern         = "SOLID_FOREGROUND")
-
-  #Applying color to the row
-  for (i in names(cells)) {
-    setCellStyle(cells[[i]], fill_style)
-  }
-  #-----------------------------------------------------------------------------
-  #Tengo il font della colonna #PSMs rosso
-  cells <- getCells(row, index)
-  fill_new <- fill_style + Font(file, color = 'red')
-  fill_new$font <- Font(file, color = 'red')
-
-  for (i in names(cells)) {
-    setCellStyle(cells[[i]], fill_new)
-  }
   #-----------------------------------------------------------------------------
   ##### Fibrinogeno
   #-----------------------------------------------------------------------------
@@ -272,36 +187,27 @@ PSMnormalization <- function(targetPeptide_name, targetProtein_name) {
   #-----------------------------------------------------------------------------
   prot <- c("Fibrinogen")
   indices <- unlist(lapply(prot, function(x) grep(x, Amyloid$Description)))
-  row <- getRows(sheet, indices+1)
 
-  cells <- getCells(row, 1:which(colnames(Amyloid)=='/PSM tot'))
-  #Specifico il colore delle righe
-  fill_style <- CellStyle(file) +
+  fill_style <- createStyle(fgFill = "peachpuff")
+  addStyle(file, sheet = sheet, rows = indices + 1, cols = 1:which(colnames(Amyloid) == '/PSM tot'), style = fill_style, stack = TRUE, gridExpand = TRUE)
 
-    Fill(backgroundColor = "peachpuff",
-
-         foregroundColor = "peachpuff",
-
-         pattern         = "SOLID_FOREGROUND")
-
-  #Applying color to the row
-  for (i in names(cells)) {
-    setCellStyle(cells[[i]], fill_style)
-  }
   #-----------------------------------------------------------------------------
-  #Tengo il font della colonna #PSMs rosso
-  cells <- getCells(row, index)
-  fill_new <- fill_style + Font(file, color = 'red')
-  fill_new$font <- Font(file, color = 'red')
+  ##### Serum Albumin
+  #-----------------------------------------------------------------------------
+  #Serum albumin OS=Homo sapiens GN=ALB PE=1 SV=2
+  #-----------------------------------------------------------------------------
+  prot <- c("Serum albumin")
+  indices <- unlist(lapply(prot, function(x) grep(x, Amyloid$Description)))
 
-  for (i in names(cells)) {
-    setCellStyle(cells[[i]], fill_new)
-  }
+  fill_style <- createStyle(fgFill = "sandybrown")
+  addStyle(file, sheet = sheet, rows = indices + 1, cols = 1:which(colnames(Amyloid) == '/PSM tot'), style = fill_style, stack = TRUE, gridExpand = TRUE)
+
+
   #-----------------------------------------------------------------------------
 
-
-  autoSizeColumn(getSheets(file)[[1]], colIndex = 1:20)
-  autoSizeColumn(getSheets(file)[[2]], colIndex = 1:20)
-  saveWorkbook(file, nomeFile)
+  setColWidths(file, 'Master', widths = 'auto', cols = 1:20)
+  setColWidths(file, 'Amyloid', widths = 'auto', cols = 1:20)
+  saveWorkbook(file, nomeFile, overwrite = TRUE)
 
 }
+

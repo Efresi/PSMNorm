@@ -45,3 +45,4 @@ appendTabellona(targetPeptide, targetProtein, Tabellona_name)
 # the function updates "Tabellona.xlsx" file in the defined working directory
 }
 
+
