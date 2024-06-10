@@ -37,4 +37,3 @@ targetProtein <- "1234 - AB-11-111 TargetProtein.txt"
 PSMnormalization(targetPeptide, targetProtein)
 # the function creates "AB-11-111.xlsx" file in the defined working directory
 }
-

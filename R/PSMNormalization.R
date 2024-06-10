@@ -1,4 +1,4 @@
-PSMnormalization <- function(targetPeptide_name, targetProtein_name) {
+PSMnormalization <- function(targetPeptide_name, targetProtein_name, out_folder) {
 
   library(data.table)
   library(stringi)
@@ -92,7 +92,7 @@ PSMnormalization <- function(targetPeptide_name, targetProtein_name) {
 
   tmp <- stri_split_boundaries(targetPeptide_name)[[1]][3] #prendo la terza sottostringa
   tmp <- stri_replace_all_fixed(tmp, " ", "")
-  nomeFile <- stri_c(tmp, ".xlsx")
+  nomeFile <- stri_c(out_folder, tmp, ".xlsx")
   list_sheets <- list("Master" = Master, "Amyloid" = Amyloid)
   write.xlsx(list_sheets, nomeFile)
 
@@ -232,7 +232,7 @@ PSMnormalization <- function(targetPeptide_name, targetProtein_name) {
 
   if (check_heavy_chainV == 1){
 
-    fill_style <- createStyle(fgFill = "green2")
+    fill_style <- createStyle(fgFill = rgb(218,238,243, maxColorValue = 255))
     addStyle(file, sheet = sheet, rows = indices + 1, cols = 1:which(colnames(Amyloid) == '/PSM tot'), style = fill_style, stack = TRUE, gridExpand = TRUE)
 
   }
@@ -272,5 +272,6 @@ PSMnormalization <- function(targetPeptide_name, targetProtein_name) {
   saveWorkbook(file, nomeFile, overwrite = TRUE)
 
 }
+
 
 

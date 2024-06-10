@@ -1,4 +1,4 @@
-appendTabellona <- function(targetPeptide_name, targetProtein_name, Tabellona_name) {
+appendTabellona <- function(targetPeptide_name, targetProtein_name, Tabellona_name, output_folder) {
 
   #funzione che aggiunge i dati relativi alle proteine di un paziente alla tabellona
   library(stringi)
@@ -136,5 +136,6 @@ appendTabellona <- function(targetPeptide_name, targetProtein_name, Tabellona_na
     cat('\n\n !!! ATTENZIONE: PAZIENTE GIÀ ESISTENTE IN TABELLONA !!!')
   }
 }
+
 
 
