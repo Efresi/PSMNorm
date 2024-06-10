@@ -40,6 +40,11 @@ PSMnormalization <- function(targetPeptide_name, targetProtein_name, out_folder)
   Master[, 1:which(columns=='Score Sequest HT')] <- targetProtein[, columns[1:which(columns=='Score Sequest HT')]]
 
   #-----------------------------------------------------------------------------
+  #Non devo considerare le proteine con OS:Bos taurus
+  #Me le tengo da parte e le riaggangio nel file master dopo aver fatto tutti i calcoli
+  indices_BosTaurus <- unlist(lapply("Bos taurus", function(x) grep(x, Master$Description)))
+
+  #-----------------------------------------------------------------------------
   # Immunoglobulin lambda-like polypeptide
   # Gestisco le Immunoglobulin lambda-like polypeptide: se presenti,
   # vado a vedere quante volte compare la sequenza VTVLGQPK nel file TargetPeptide
@@ -47,6 +52,12 @@ PSMnormalization <- function(targetPeptide_name, targetProtein_name, out_folder)
 
   prot <- c("Immunoglobulin lambda-like")
   indices_lambda <- unlist(lapply(prot, function(x) grep(x, Master$Description)))
+
+  #check se LL ha qualche bos taurus, in caso rimuovo le LL con quella descrizione
+  if (sum(indices_BosTaurus %in% indices_lambda)>0){
+    indices_lambda <- indices_lambda[-which(indices_lambda %in% indices_BosTaurus)]
+  }
+
   check_lamb_like <- 0
 
   if(length(indices_lambda) != 0){ #se presente la lambda-like
@@ -68,6 +79,11 @@ PSMnormalization <- function(targetPeptide_name, targetProtein_name, out_folder)
   #Calcolo PSM/AA/PSM tot
   PSM_norm <- (Master$`PSM/AA`)/(PSMtot)*100
   Master[, "/PSM tot"] <- PSM_norm
+
+  #Rimuovo proteine bos taurus
+  BOSTAURUS <- Master[indices_BosTaurus, ]
+  Master <- Master[-indices_BosTaurus, ]
+
 
   #Metto in ordine per psm normalizzato
   Master <- Master[order(- Master$`/PSM tot`), ]
@@ -93,11 +109,12 @@ PSMnormalization <- function(targetPeptide_name, targetProtein_name, out_folder)
                "Transthyretin", "Vitronectin", "heavy chain_V")
 
   idx <- unlist(lapply(amyPROT, function(x) grep(x, Master$Description)))
-  Amyloid <- Master[idx, -c(which(colnames(Master)=='D'), which(colnames(Master) == 'Coverage'))]
+  Amyloid <- Master[idx, -c(which(colnames(Master)=='D'))]
   Amyloid <- Amyloid[order(- Amyloid$`/PSM tot`), ]
   Amyloid[1, "PSM tot"] <- PSMtot
   Amyloid[1, "Somma"] <- sum(Master[AmySigIndex, "/PSM tot"])
 
+  Master <- rbind(Master, BOSTAURUS)
   ##################################################################################
   #----------------------Gestisco file xlsx in uscita--------------------------#
 
@@ -259,6 +276,8 @@ PSMnormalization <- function(targetPeptide_name, targetProtein_name, out_folder)
   # - RAEVSADQVATVMWDYFSQLSNNAK
   # - AEVSADQVATVMWDYFSQLSNNAK
 
+  prot <- c("Apolipoprotein A-IV")
+  indices <- unlist(lapply(prot, function(x) grep(x, Amyloid$Description)))
   check_apo_A_IV <- 0
 
   if(length(indices) != 0){

@@ -9,6 +9,11 @@ appendTabellona <- function(targetPeptide_name, targetProtein_name, Tabellona_PA
   #Carico TargetProtein
   targetProtein <- read_delim(targetProtein_name, delim = "\t", show_col_types = FALSE, progress = FALSE)
 
+  #Rimuovo le proteine Bos taurus dal file targetProtein
+  #non  deve essere preso in considerazione nei calcoli
+
+  indices_BosTaurus <- unlist(lapply("Bos taurus", function(x) grep(x, targetProtein$Description)))
+  targetProtein <- targetProtein[-indices_BosTaurus, ]
 
   #prendo numero paziente, codice e file dal nome file
   #prendo PSM tot dal numero righe di TargetPeptide
@@ -141,7 +146,38 @@ appendTabellona <- function(targetPeptide_name, targetProtein_name, Tabellona_PA
       Tabellona[nrow(Tabellona), 'File']    <- file_pz
       Tabellona[nrow(Tabellona), 'PSM tot'] <- PSMtot
 
-      ##### IMMUNOGLOBULINE Lambda
+      #-----------------------------------------------------------------------------
+      #### Apolipoprotein A-IV
+      #-----------------------------------------------------------------------------
+      # Gestisco la Apolipoprotein A-IV, check se presente almeno una delle seguenti sequenze
+      # - ARAEVSADQVATVMWDYFSQLSNNAK
+      # - RAEVSADQVATVMWDYFSQLSNNAK
+      # - AEVSADQVATVMWDYFSQLSNNAK
+
+      prot <- c("Apolipoprotein A-IV")
+      indices <- unlist(lapply(prot, function(x) grep(x, targetProtein$Description)))
+      check_apo_A_IV <- 0
+
+      if(length(indices) != 0){
+        IDXpeptides_1 <- unlist(lapply("ARAEVSADQVATVMWDYFSQLSNNAK", function(x) grep(x, targetPeptide$'Annotated Sequence')))
+        IDXpeptides_2 <- unlist(lapply("RAEVSADQVATVMWDYFSQLSNNAK", function(x) grep(x, targetPeptide$'Annotated Sequence')))
+        IDXpeptides_3 <- unlist(lapply("AEVSADQVATVMWDYFSQLSNNAK", function(x) grep(x, targetPeptide$'Annotated Sequence')))
+        cond = length(IDXpeptides_1) != 0 | length(IDXpeptides_2) != 0 | length(IDXpeptides_3) != 0
+        check_apo_A_IV <- ifelse(cond, 1, 0)
+      }
+
+      # Se check==1 metto colonna APOA-IV a 1
+
+      Tabellona[nrow(Tabellona), 'ApoA-IV'] <- ifelse(check_apo_A_IV==1, 1, 0)
+
+      #### IMMUNOGLOBULINA Lambda-Like
+      #-----------------------------------------------------------------------------
+      # se presente lambda-like (idx_ll != vuoto)
+      # metto colonna Lambda-Like a 1
+      Tabellona[nrow(Tabellona), 'Lambda-Like'] <- ifelse(length(idx_ll)!=0, 1, 0)
+
+
+      ##### IMMUNOGLOBULINE Lambda (prendo prot a PSM maggiore)
       #-----------------------------------------------------------------------------
       # Immunoglobulin lambda constant
       # Immunoglobulin lambda-like polypeptide
