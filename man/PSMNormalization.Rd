@@ -10,12 +10,12 @@ It provides also the sum of PSM amyloidogenic proteins:
 (Apolipoprotein E, Apolipoprotein A-IV, Serum amyloid P-component)
 }
 \usage{
-PSMnormalization(targetPeptide_name, targetProtein_name)
+PSMnormalization(targetPeptide_name, targetProtein_name, out_folder)
 }
 \arguments{
   \item{targetPeptide_name}{ TargetPeptideSpectrumMatch.txt filename}
   \item{targetProtein_name}{ targetProtein_name.txt filename}
-
+  \item{out_folder}{ a file path for the output folder in which the .xlsx file will be saved}
 }
 }
 \value{
@@ -34,6 +34,7 @@ Eleonora Fresi
 \examples{
 targetPeptide <- "1234 - AB-11-111 TargetPeptideSpectrumMatch.txt"
 targetProtein <- "1234 - AB-11-111 TargetProtein.txt"
-PSMnormalization(targetPeptide, targetProtein)
-# the function creates "AB-11-111.xlsx" file in the defined working directory
+output_folder <- "C:/Users/utente/prova/"
+PSMnormalization(targetPeptide, targetProtein, output_folder)
+# the function creates "AB-11-111.xlsx" file in the defined output folder
 }

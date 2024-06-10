@@ -1,7 +1,7 @@
 PSMnormalization <- function(targetPeptide_name, targetProtein_name, out_folder) {
 
-  library(data.table)
   library(stringi)
+  library(openxlsx)
 
   #Carico file TargetPeptideSpectrumMatch
   targetPeptide <- read.csv(targetPeptide_name , sep = "" )
@@ -17,6 +17,7 @@ PSMnormalization <- function(targetPeptide_name, targetProtein_name, out_folder)
   #Calcolo PSMtot
   PSMtot <- nrow(targetPeptide)
 
+  #Colonne dello sheet Master
   columns <- c("Accession", "Description", "D", "Coverage", "# Peptides",
                "# PSMs", "# Unique Peptides",
                "# Protein Groups", "# AAs","MW [kDa]", "calc. pI", 	"Score Sequest HT",
@@ -40,9 +41,8 @@ PSMnormalization <- function(targetPeptide_name, targetProtein_name, out_folder)
   if(length(indices_lambda) != 0){ #se presente la lambda-like
 
     IDXpeptides <- unlist(lapply("VTVLGQPK", function(x) grep(x, targetPeptide$Annotated.Sequence))) #cerco la sequenza
-    if (length(IDXpeptides) != 0 ){ #se presente la sequenza metti check = 1 per colorare la riga di rosso
-      check_lamb_like <- 1
-    }
+    check_lamb_like <- ifelse(length(IDXpeptides) != 0, 1, 0) #se presente la sequenza metti check = 1 per colorare la riga di rosso
+
     # Correggo psm della lamda like sottraendo il numero di volte che trovo la sequenza VTVLGQPK
     # Correggo #AAs che deve esssere 106 nella lambda-like
 
@@ -59,7 +59,7 @@ PSMnormalization <- function(targetPeptide_name, targetProtein_name, out_folder)
   Master[, "/PSM tot"] <- round(PSM_norm, 3)
 
   #Metto in ordine per psm normalizzato
-  Master <- setorderv(Master, cols = "/PSM tot", order = -1)
+  Master <- Master[order(- Master$`/PSM tot`), ]
   Master[1, "PSM tot"] <- PSMtot
 
   #Somma le proteine dell'Amyloid signature
@@ -80,15 +80,15 @@ PSMnormalization <- function(targetPeptide_name, targetProtein_name, out_folder)
   amyPROT <- c("Apolipoprotein A", "Apolipoprotein C", "Apolipoprotein E", "Beta-2-microglobulin",
                "Fibrinogen", "Gelsolin", "Immunoglobulin", "Lysozyme", "Serum albumin", "Serum amyloid",
                "Transthyretin", "Vitronectin", "heavy chain_V")
+
   idx <- unlist(lapply(amyPROT, function(x) grep(x, Master$Description)))
   Amyloid <- Master[idx, -c(which(colnames(Master)=='D'), which(colnames(Master)=='Coverage'))]
-  Amyloid <- setorderv(Amyloid, cols = "/PSM tot", order = -1)
+  Amyloid <- Amyloid[order(- Amyloid$`/PSM tot`), ]
   Amyloid[1, "PSM tot"] <- PSMtot
   Amyloid[1, "Somma"] <- sum(Master[AmySigIndex, "/PSM tot"])
 
   ##################################################################################
   #----------------------Gestisco file xlsx in uscita--------------------------#
-  library(openxlsx)
 
   tmp <- stri_split_boundaries(targetPeptide_name)[[1]][3] #prendo la terza sottostringa
   tmp <- stri_replace_all_fixed(tmp, " ", "")
@@ -110,7 +110,7 @@ PSMnormalization <- function(targetPeptide_name, targetProtein_name, out_folder)
   # Metto il testo della colonna #PSMs in rosso
   index <- which(colnames(Amyloid) == '# PSMs')
   fill_style_PSM <- createStyle(fontColour = "red")
-  addStyle(file, sheet = sheet, rows = 1:nrow(Amyloid), cols = index, style = fill_style_PSM, stack = TRUE)
+  addStyle(file, sheet = sheet, rows = 1:(nrow(Amyloid)+1), cols = index, style = fill_style_PSM, stack = TRUE)
 
   #-----------------------------------------------------------------------------
   ####Crea la formattazione in automatico per le proteine dell'Amyloid signature nel foglio Amyloid####
@@ -121,7 +121,7 @@ PSMnormalization <- function(targetPeptide_name, targetProtein_name, out_folder)
               "Serum amyloid P")
 
   AmySigIndex <- unlist(lapply(AmySig, function(x) grep(x, Amyloid$Description)))
-  fill_style <- createStyle(fgFill = "yellow")
+  fill_style <- createStyle(fgFill = rgb(255,255,0, maxColorValue = 255)) #yellow
   addStyle(file, sheet = sheet, rows = AmySigIndex + 1, cols = 1:which(colnames(Amyloid) == '/PSM tot'), style = fill_style, stack = TRUE, gridExpand = TRUE)
 
   #-----------------------------------------------------------------------------
@@ -149,7 +149,7 @@ PSMnormalization <- function(targetPeptide_name, targetProtein_name, out_folder)
 
   indices <- c(indices_kappa, indices_lambda_max)
 
-  fill_style <- createStyle(fgFill = "lightblue")
+  fill_style <- createStyle(fgFill = rgb(218, 238, 243, maxColorValue = 255)) #azzurro
   addStyle(file, sheet = sheet, rows = indices + 1, cols = 1:which(colnames(Amyloid) == '/PSM tot'), style = fill_style, stack = TRUE, gridExpand = TRUE)
 
 
@@ -172,10 +172,13 @@ PSMnormalization <- function(targetPeptide_name, targetProtein_name, out_folder)
   #-----------------------------------------------------------------------------
   prot_TTR <- c("Transthyretin")
   prot_SAA <- c("Serum amyloid A")
+  prot <- c("Apolipoprotein A-I ", 'Gelsolin')
 
   indices_TTR <- unlist(lapply(prot_TTR, function(x) grep(x, Amyloid$Description)))
 
   indices_SAA <- unlist(lapply(prot_SAA, function(x) grep(x, Amyloid$Description)))
+
+  indices <- unlist(lapply(prot, function(x) grep(x, Amyloid$Description)))
 
   # Find the indices of SAA with the maximum value of Amyloid$#PSMs
   max_index <- which.max(Amyloid$`# PSMs`[indices_SAA])
@@ -183,9 +186,9 @@ PSMnormalization <- function(targetPeptide_name, targetProtein_name, out_folder)
   # Select only the index with the maximum value of Amyloid$PSMs
   indices_SAA_max <- indices_SAA[max_index]
 
-  indices <- c(indices_TTR, indices_SAA_max)
+  indices <- c(indices_TTR, indices_SAA_max, indices)
 
-  fill_style <- createStyle(fgFill = "pink")
+  fill_style <- createStyle(fgFill = rgb(242, 220, 219, maxColorValue = 255)) #rosso tenue
   addStyle(file, sheet = sheet, rows = indices + 1, cols = 1:which(colnames(Amyloid) == '/PSM tot'), style = fill_style, stack = TRUE, gridExpand = TRUE)
 
 
@@ -199,18 +202,19 @@ PSMnormalization <- function(targetPeptide_name, targetProtein_name, out_folder)
   prot <- c("Fibrinogen")
   indices <- unlist(lapply(prot, function(x) grep(x, Amyloid$Description)))
 
-  fill_style <- createStyle(fgFill = "peachpuff")
+  fill_style <- createStyle(fgFill = rgb(228, 223, 236, maxColorValue = 255)) #lilla
   addStyle(file, sheet = sheet, rows = indices + 1, cols = 1:which(colnames(Amyloid) == '/PSM tot'), style = fill_style, stack = TRUE, gridExpand = TRUE)
 
   #-----------------------------------------------------------------------------
-  ##### Serum Albumin
+  ##### Serum Albumin and Vitronectin
   #-----------------------------------------------------------------------------
   #Serum albumin OS=Homo sapiens GN=ALB PE=1 SV=2
+  #Vitronectin OS=Homo sapiens OX=9606 GN=VTN PE=1 SV=1
   #-----------------------------------------------------------------------------
-  prot <- c("Serum albumin")
+  prot <- c("Serum albumin", 'Vitronectin')
   indices <- unlist(lapply(prot, function(x) grep(x, Amyloid$Description)))
 
-  fill_style <- createStyle(fgFill = "sandybrown")
+  fill_style <- createStyle(fgFill = rgb(253, 233, 217, maxColorValue = 255)) #arancio
   addStyle(file, sheet = sheet, rows = indices + 1, cols = 1:which(colnames(Amyloid) == '/PSM tot'), style = fill_style, stack = TRUE, gridExpand = TRUE)
 
   #-----------------------------------------------------------------------------
@@ -232,7 +236,7 @@ PSMnormalization <- function(targetPeptide_name, targetProtein_name, out_folder)
 
   if (check_heavy_chainV == 1){
 
-    fill_style <- createStyle(fgFill = rgb(218,238,243, maxColorValue = 255))
+    fill_style <- createStyle(fgFill = rgb(235,241,222, maxColorValue = 255))#verde
     addStyle(file, sheet = sheet, rows = indices + 1, cols = 1:which(colnames(Amyloid) == '/PSM tot'), style = fill_style, stack = TRUE, gridExpand = TRUE)
 
   }
@@ -272,6 +276,3 @@ PSMnormalization <- function(targetPeptide_name, targetProtein_name, out_folder)
   saveWorkbook(file, nomeFile, overwrite = TRUE)
 
 }
-
-
-
