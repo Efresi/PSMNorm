@@ -1,4 +1,4 @@
-
+prova
 # OMOP_SEPSIS
 
 Questo repository contiene il codice per condurre le analisi per lo studio "Predittori per la sepsi ospedaliera. Uno studio di coorte longitudinale del nodo OHDSI italiano.". 
