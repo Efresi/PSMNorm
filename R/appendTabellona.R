@@ -13,7 +13,10 @@ appendTabellona <- function(targetPeptide_name, targetProtein_name, Tabellona_PA
   #non  deve essere preso in considerazione nei calcoli
 
   indices_BosTaurus <- unlist(lapply("Bos taurus", function(x) grep(x, targetProtein$Description)))
-  targetProtein <- targetProtein[-indices_BosTaurus, ]
+  if(length(indices_BosTaurus)!=0){
+    targetProtein <- targetProtein[-indices_BosTaurus, ]
+  }
+
 
   #prendo numero paziente, codice e file dal nome file
   #prendo PSM tot dal numero righe di TargetPeptide

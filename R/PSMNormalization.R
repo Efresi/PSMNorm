@@ -80,10 +80,11 @@ PSMnormalization <- function(targetPeptide_name, targetProtein_name, out_folder)
   PSM_norm <- (Master$`PSM/AA`)/(PSMtot)*100
   Master[, "/PSM tot"] <- PSM_norm
 
-  #Rimuovo proteine bos taurus
-  BOSTAURUS <- Master[indices_BosTaurus, ]
-  Master <- Master[-indices_BosTaurus, ]
-
+  #Rimuovo proteine bos taurus (quando presenti)
+  if(length(indices_BosTaurus) != 0){
+      BOSTAURUS <- Master[indices_BosTaurus, ]
+      Master <- Master[-indices_BosTaurus, ]
+  }
 
   #Metto in ordine per psm normalizzato
   Master <- Master[order(- Master$`/PSM tot`), ]
@@ -109,12 +110,17 @@ PSMnormalization <- function(targetPeptide_name, targetProtein_name, out_folder)
                "Transthyretin", "Vitronectin", "heavy chain_V")
 
   idx <- unlist(lapply(amyPROT, function(x) grep(x, Master$Description)))
-  Amyloid <- Master[idx, -c(which(colnames(Master)=='D'))]
-  Amyloid <- Amyloid[order(- Amyloid$`/PSM tot`), ]
-  Amyloid[1, "PSM tot"] <- PSMtot
-  Amyloid[1, "Somma"] <- sum(Master[AmySigIndex, "/PSM tot"])
+  if(length(idx)!=0){ #check per presenza proteine foglio amyloid
+    Amyloid <- Master[idx, -c(which(colnames(Master)=='D'))]
+    Amyloid <- Amyloid[order(- Amyloid$`/PSM tot`), ]
+    Amyloid[1, "PSM tot"] <- PSMtot
+    Amyloid[1, "Somma"] <- sum(Master[AmySigIndex, "/PSM tot"])
+  }
 
-  Master <- rbind(Master, BOSTAURUS)
+
+  if(length(indices_BosTaurus) != 0){
+    Master <- rbind(Master, BOSTAURUS)
+  }
   ##################################################################################
   #----------------------Gestisco file xlsx in uscita--------------------------#
 
