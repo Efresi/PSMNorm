@@ -179,6 +179,36 @@ appendTabellona <- function(targetPeptide_name, targetProtein_name, Tabellona_PA
       # metto colonna Lambda-Like a 1
       Tabellona[nrow(Tabellona), 'Lambda-Like'] <- ifelse(length(idx_ll)!=0, 1, 0)
 
+      #### Daratumumab -new-
+      #-----------------------------------------------------------------------------
+      # se presente Daratumumab in TargetPeptideSpectrumMatch (idx_dara != vuoto)
+      # metto colonna D a 1
+
+      IDXdara <- unlist(lapply("GLEWVSAISGSGGGTYYADSVK", function(x) grep(x, targetPeptide$'Annotated Sequence')))
+
+      Tabellona[nrow(Tabellona), 'D'] <- ifelse(length(IDXdara)!=0, 1, 0)
+
+      #### Lambda 1 -new-
+      #-----------------------------------------------------------------------------
+      # se presente lambda 1 in TargetPeptideSpectrumMatch (idx_lambda != vuoto)
+      # metto colonna D a 1
+
+      IDXprot <- unlist(lapply("ANPTVTLFPPSSEELQANK", function(x) grep(x, targetPeptide$'Annotated Sequence')))
+
+      Tabellona[nrow(Tabellona), 'Lambda 1'] <- ifelse(length(IDXprot)!=0, 1, 0)
+
+      #### SAA -new-
+      #-----------------------------------------------------------------------------
+      # se presente lambda 1 in TargetPeptideSpectrumMatch (idx_lambda != vuoto)
+      # metto colonna D a 1
+
+      IDXprot <- unlist(lapply("ANPTVTLFPPSSEELQANK", function(x) grep(x, targetPeptide$'Annotated Sequence')))
+
+      Tabellona[nrow(Tabellona), 'Lambda 1'] <- ifelse(length(IDXprot)!=0, 1, 0)
+
+
+
+
 
       ##### IMMUNOGLOBULINE Lambda (prendo prot a PSM maggiore)
       #-----------------------------------------------------------------------------
