@@ -199,15 +199,21 @@ appendTabellona <- function(targetPeptide_name, targetProtein_name, Tabellona_PA
 
       #### SAA -new-
       #-----------------------------------------------------------------------------
-      # se presente lambda 1 in TargetPeptideSpectrumMatch (idx_lambda != vuoto)
-      # metto colonna D a 1
+      # se presente peptidi 1 o 2 in TargetPeptideSpectrumMatch metto SAA = 1
+      # se presente peptidi 3 o 4 in TargetPeptideSpectrumMatch metto SAA = 2
+      # se presente peptidi 1 o 2 E 3 o 4 in TargetPeptideSpectrumMatch metto SAA = 3
+      # Se nessun peptide presente metto SAA = 4
 
-      IDXprot <- unlist(lapply("ANPTVTLFPPSSEELQANK", function(x) grep(x, targetPeptide$'Annotated Sequence')))
+      IDXpeptides_1 <- unlist(lapply("GPGGAWAAEVITDAR", function(x) grep(x, targetPeptide$'Annotated Sequence')))
+      IDXpeptides_2 <- unlist(lapply("FFGHGAEDSLADQAANEWGR", function(x) grep(x, targetPeptide$'Annotated Sequence')))
+      IDXpeptides_3 <- unlist(lapply("GPGGAWAAEVISNAR", function(x) grep(x, targetPeptide$'Annotated Sequence')))
+      IDXpeptides_4 <- unlist(lapply("GAEDSLADQAANK", function(x) grep(x, targetPeptide$'Annotated Sequence')))
 
-      Tabellona[nrow(Tabellona), 'Lambda 1'] <- ifelse(length(IDXprot)!=0, 1, 0)
+      cond1 <- length(IDXpeptides_1) != 0 | length(IDXpeptides_2 != 0)
+      cond2 <- length(IDXpeptides_3) != 0 | length(IDXpeptides_4 != 0)
+      cond3 <- cond1 & cond2
 
-
-
+      Tabellona[nrow(Tabellona), 'SAA'] <- ifelse(cond3, 3, ifelse(cond2, 2, ifelse(cond1, 1, 0)))
 
 
       ##### IMMUNOGLOBULINE Lambda (prendo prot a PSM maggiore)
