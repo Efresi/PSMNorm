@@ -72,6 +72,16 @@ PSMnormalization <- function(targetPeptide_name, targetProtein_name, out_folder)
     Master[indices_lambda, '# AAs'] <- 106
   }
 
+  #Correggo #AAs per APOC2, se presente
+
+  idx_apoc2 <- unlist(lapply("APOC4-APOC2 readthrough", function(x) grep(x, targetProtein$Description)))
+
+  if(length(idx_apoc2) != 0){
+
+    Master[idx_apoc2, '# AAs'] <- 101
+
+  }
+
   #-----------------------------------------------------------------------------
   #Calcolo PSM/AA
   Master[, "PSM/AA"] <- ((Master$`# PSMs`)/(Master$`# AAs`)*100)

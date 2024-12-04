@@ -74,6 +74,15 @@ appendTabellona <- function(targetPeptide_name, targetProtein_name, Tabellona_PA
 
   }
 
+   #Correggo #AAs per APOC2, se presente
+
+  idx_apoc2 <- unlist(lapply("APOC4-APOC2 readthrough", function(x) grep(x, targetProtein$Description)))
+  if(length(idx_apoc2) != 0){
+
+    targetProtein$`# AAs`[idx_apoc2] <- 101
+
+  }
+
   #Calcolo PSM/AA
   PSM_AA <- ((targetProtein$`# PSMs`[idx])/(targetProtein$`# AAs`[idx])*100)
 
@@ -93,7 +102,7 @@ appendTabellona <- function(targetPeptide_name, targetProtein_name, Tabellona_PA
   Tabellona <- read.xlsx(Tabellona_PATH, sheet = 1, sep.names = " ")
 
   idx_prot <- c('Apolipoprotein A-I ' , 'Apolipoprotein A-II ' , 'Apolipoprotein A-IV ' ,
-                'Apolipoprotein C-II ' , 'Apolipoprotein C-III ' , 'Apolipoprotein E' ,
+                'APOC2 ' , 'Apolipoprotein C-III ' , 'Apolipoprotein E' ,
                 'Beta-2-microglobulin' , 'Fibrinogen alpha' , 'Fibrinogen beta' ,
                 'Fibrinogen gamma' , 'Gelsolin' ,'Immunoglobulin heavy constant alpha' ,
                 'Immunoglobulin heavy constant gamma' , 'Immunoglobulin heavy constant mu' ,
@@ -179,7 +188,7 @@ appendTabellona <- function(targetPeptide_name, targetProtein_name, Tabellona_PA
       # metto colonna Lambda-Like a 1
       Tabellona[nrow(Tabellona), 'Lambda-Like'] <- ifelse(length(idx_ll)!=0, 1, 0)
 
-      #### Daratumumab -new-
+      #### Daratumumab
       #-----------------------------------------------------------------------------
       # se presente Daratumumab in TargetPeptideSpectrumMatch (idx_dara != vuoto)
       # metto colonna D a 1
@@ -188,16 +197,16 @@ appendTabellona <- function(targetPeptide_name, targetProtein_name, Tabellona_PA
 
       Tabellona[nrow(Tabellona), 'D'] <- ifelse(length(IDXdara)!=0, 1, 0)
 
-      #### Lambda 1 -new-
+      #### Lambda 1
       #-----------------------------------------------------------------------------
       # se presente lambda 1 in TargetPeptideSpectrumMatch (idx_lambda != vuoto)
-      # metto colonna D a 1
+      # metto colonna Lambda 1 a 1
 
       IDXprot <- unlist(lapply("ANPTVTLFPPSSEELQANK", function(x) grep(x, targetPeptide$'Annotated Sequence')))
 
       Tabellona[nrow(Tabellona), 'Lambda 1'] <- ifelse(length(IDXprot)!=0, 1, 0)
 
-      #### SAA -new-
+      #### SAA
       #-----------------------------------------------------------------------------
       # se presente peptidi 1 o 2 in TargetPeptideSpectrumMatch metto SAA = 1
       # se presente peptidi 3 o 4 in TargetPeptideSpectrumMatch metto SAA = 2

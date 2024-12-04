@@ -17,7 +17,6 @@ PSMnormalization(targetPeptide_name, targetProtein_name, out_folder)
   \item{targetProtein_name}{ targetProtein_name.txt filename}
   \item{out_folder}{ a file path for the output folder in which the .xlsx file will be saved}
 }
-}
 \value{
 \item{normalizedOUTPUT }{.xlsx formatted file with normalized PSMs and amyloidogenic proteins}
 }
