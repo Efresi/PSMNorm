@@ -43,7 +43,7 @@ appendTabellona <- function(targetPeptide_name, targetProtein_name, Tabellona_PA
                "Immunoglobulin heavy constant mu", "Immunoglobulin kappa constant",
                "Immunoglobulin lambda constant", "Immunoglobulin lambda-like",
                "Lysozyme", "Serum albumin", "Serum amyloid",
-               "Transthyretin", "Vitronectin")
+               "Transthyretin", "Vitronectin", "APOC2")
 
   columns <- c("Description","# AAs", "Coverage", "# PSMs", "Score Sequest HT")
 
@@ -102,7 +102,7 @@ appendTabellona <- function(targetPeptide_name, targetProtein_name, Tabellona_PA
   Tabellona <- read.xlsx(Tabellona_PATH, sheet = 1, sep.names = " ")
 
   idx_prot <- c('Apolipoprotein A-I ' , 'Apolipoprotein A-II ' , 'Apolipoprotein A-IV ' ,
-                'APOC2 ' , 'Apolipoprotein C-III ' , 'Apolipoprotein E' ,
+                'APOC2' , 'Apolipoprotein C-III ' , 'Apolipoprotein E' ,
                 'Beta-2-microglobulin' , 'Fibrinogen alpha' , 'Fibrinogen beta' ,
                 'Fibrinogen gamma' , 'Gelsolin' ,'Immunoglobulin heavy constant alpha' ,
                 'Immunoglobulin heavy constant gamma' , 'Immunoglobulin heavy constant mu' ,

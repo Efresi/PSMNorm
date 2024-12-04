@@ -117,7 +117,7 @@ PSMnormalization <- function(targetPeptide_name, targetProtein_name, out_folder)
   #Seleziono proteine per foglio amyloid
   amyPROT <- c("Apolipoprotein A", "Apolipoprotein C", "Apolipoprotein E", "Beta-2-microglobulin",
                "Fibrinogen", "Gelsolin", "Immunoglobulin", "Lysozyme", "Serum albumin", "Serum amyloid",
-               "Transthyretin", "Vitronectin", "heavy chain_V")
+               "Transthyretin", "Vitronectin", "heavy chain_V", "APOC2")
 
   idx <- unlist(lapply(amyPROT, function(x) grep(x, Master$Description)))
   if(length(idx)!=0){ #check per presenza proteine foglio amyloid
